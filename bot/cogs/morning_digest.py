@@ -49,17 +49,18 @@ class MorningDigest(commands.Cog):
             color=BLURPLE,
         )
 
-        _SERVICES = ["weather", "github", "rss_hn", "rss_devto", "calendar", "gmail"]
+        _SERVICES = ["weather", "github", "rss_hn", "rss_devto", "calendar", "tasks", "gmail"]
         _results = await asyncio.gather(
             weather_service.get_weather(),
             asyncio.to_thread(github_service.get_recent_activity),
             asyncio.to_thread(rss_service.get_hn_top),
             asyncio.to_thread(rss_service.get_devto_top),
             asyncio.to_thread(calendar_service.get_todays_events),
+            asyncio.to_thread(calendar_service.get_todays_tasks),
             asyncio.to_thread(gmail_service.get_important_emails),
             return_exceptions=True,
         )
-        weather, github, hn, devto, calendar, gmail = [
+        weather, github, hn, devto, calendar, tasks, gmail = [
             (log.error("digest: falha em %s", svc, exc_info=r) or None)
             if isinstance(r, Exception) else r
             for svc, r in zip(_SERVICES, _results)
@@ -78,15 +79,18 @@ class MorningDigest(commands.Cog):
         else:
             embed.add_field(name="☁️ Clima", value="⚠️ Indisponível", inline=False)
 
-        # Agenda
+        # Agenda (eventos + tasks)
+        lines = []
         if calendar is not None:
-            if calendar:
-                value = "\n".join(f"• {e['start'][:16].replace('T', ' ')} — {e['summary']}" for e in calendar[:5])
-            else:
-                value = "_Nenhum evento hoje_"
-            embed.add_field(name="📅 Agenda", value=value, inline=False)
-        else:
+            lines += [f"• {e['start'][:16].replace('T', ' ')} — {e['summary']}" for e in calendar[:5]]
+        if tasks is not None:
+            lines += [f"☑ {t['summary']}" for t in tasks[:5]]
+        if calendar is None and tasks is None:
             embed.add_field(name="📅 Agenda", value="⚠️ Indisponível", inline=False)
+        elif lines:
+            embed.add_field(name="📅 Agenda", value="\n".join(lines), inline=False)
+        else:
+            embed.add_field(name="📅 Agenda", value="_Nenhum evento ou task hoje_", inline=False)
 
         # GitHub
         if github:

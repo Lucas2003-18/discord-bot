@@ -151,6 +151,28 @@ def get_todays_events() -> list[dict] | None:
         return None
 
 
+def get_todays_tasks() -> list[dict] | None:
+    try:
+        service = build("tasks", "v1", credentials=_get_credentials())
+        today = date.today().isoformat()
+        result = service.tasks().list(
+            tasklist="@default",
+            showCompleted=False,
+            showHidden=False,
+        ).execute()
+        tasks = []
+        for t in result.get("items", []):
+            due = t.get("due", "")
+            if due and due[:10] <= today:
+                tasks.append({"summary": t.get("title", "Sem título"), "due": due[:10]})
+        return tasks
+    except RuntimeError:
+        raise
+    except Exception as e:
+        log.error("calendar_service get_todays_tasks error: %s", e)
+        return None
+
+
 def create_event(summary: str, event_date: date, hour: int | None = None, minute: int = 0) -> bool:
     try:
         service = build("calendar", "v3", credentials=_get_credentials())
