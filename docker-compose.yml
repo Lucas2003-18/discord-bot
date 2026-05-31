@@ -6,7 +6,7 @@ services:
     volumes:
       - vault_data:/app/vault
       - ./credencials.json:/run/secrets/google_credentials:ro
-      - ./token.json:/run/secrets/google_token:ro
+      - ./token.json:/run/secrets/google_token
       - /var/run/docker.sock:/var/run/docker.sock:ro
       - /proc:/host/proc:ro
       - /:/host/root:ro
