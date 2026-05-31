@@ -1,7 +1,5 @@
 import asyncio
 import logging
-import socket
-import aiohttp
 import discord
 from discord.ext import commands
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
@@ -15,9 +13,9 @@ log = logging.getLogger(__name__)
 
 
 class GlitchBot(commands.Bot):
-    def __init__(self, scheduler: AsyncIOScheduler, connector: aiohttp.TCPConnector | None = None) -> None:
+    def __init__(self, scheduler: AsyncIOScheduler) -> None:
         intents = discord.Intents.default()
-        super().__init__(command_prefix="!", intents=intents, connector=connector)
+        super().__init__(command_prefix="!", intents=intents)
         self.scheduler = scheduler
 
     async def setup_hook(self) -> None:
@@ -44,11 +42,7 @@ class GlitchBot(commands.Bot):
 
 async def main() -> None:
     scheduler = AsyncIOScheduler(timezone=config.TIMEZONE)
-    connector = aiohttp.TCPConnector(
-        resolver=aiohttp.AsyncResolver(nameservers=["8.8.8.8", "1.1.1.1"]),
-        family=socket.AF_INET,
-    )
-    bot = GlitchBot(scheduler, connector=connector)
+    bot = GlitchBot(scheduler)
     async with bot:
         await bot.start(config.DISCORD_TOKEN)
 

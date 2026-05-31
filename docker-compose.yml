@@ -6,8 +6,10 @@ services:
     volumes:
       - vault_data:/app/vault
       - ./credencials.json:/run/secrets/google_credentials:ro
+      - ./token.json:/run/secrets/google_token:ro
     environment:
       - GOOGLE_CREDENTIALS_JSON=/run/secrets/google_credentials
+      - GOOGLE_TOKEN_JSON=/run/secrets/google_token
 
 volumes:
   vault_data:
