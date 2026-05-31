@@ -26,6 +26,17 @@ _WEEKDAYS_PT: dict[str, int] = {
     "domingo": 6,
 }
 
+_WEEKDAY_NAMES_PT: dict[int, str] = {
+    0: "segunda", 1: "terça", 2: "quarta", 3: "quinta",
+    4: "sexta", 5: "sábado", 6: "domingo",
+}
+
+
+class AmbiguousDateError(ValueError):
+    def __init__(self, options: list[tuple[str, date]]) -> None:
+        self.options = options
+        super().__init__("Data ambígua — use 'essa sexta' ou 'próxima sexta' para ser explícito")
+
 
 def parse_date_str(date_str: str) -> date:
     s = date_str.strip().strip("\"'").strip().lower()
@@ -38,17 +49,47 @@ def parse_date_str(date_str: str) -> date:
     if s in ("depois de amanhã", "depois de amanha"):
         return today + timedelta(days=2)
 
+    # "essa/esse [dia]" — próxima ocorrência dentro desta semana
+    for prefix in ("essa ", "esse "):
+        if s.startswith(prefix):
+            day_name = s[len(prefix):]
+            if day_name in _WEEKDAYS_PT:
+                target_wd = _WEEKDAYS_PT[day_name]
+                days_ahead = (target_wd - today.weekday()) % 7 or 7
+                return today + timedelta(days=days_ahead)
+
+    # "próxima/próximo [dia]" — ocorrência da semana seguinte
+    for prefix in ("próxima ", "proxima ", "próximo ", "proximo "):
+        if s.startswith(prefix):
+            day_name = s[len(prefix):]
+            if day_name in _WEEKDAYS_PT:
+                target_wd = _WEEKDAYS_PT[day_name]
+                days_ahead = (target_wd - today.weekday()) % 7 or 7
+                return today + timedelta(days=days_ahead + 7)
+
     if s in _WEEKDAYS_PT:
         target_wd = _WEEKDAYS_PT[s]
         days_ahead = (target_wd - today.weekday()) % 7
-        if days_ahead == 0:
-            days_ahead = 7
+        # Dia é hoje (0) ou amanhã (1): ambíguo entre esta semana e a próxima.
+        # Lança AmbiguousDateError para que o caller mostre um Select Menu ao usuário.
+        if days_ahead <= 1:
+            this_week = today + timedelta(days=days_ahead)
+            next_week = this_week + timedelta(days=7)
+            day_pt = _WEEKDAY_NAMES_PT[target_wd]
+            suffix = " (hoje)" if days_ahead == 0 else " (amanhã)"
+            raise AmbiguousDateError([
+                (f"Esta {day_pt} — {this_week.strftime('%d/%m')}{suffix}", this_week),
+                (f"Próxima {day_pt} — {next_week.strftime('%d/%m')}", next_week),
+            ])
         return today + timedelta(days=days_ahead)
 
     try:
         return date.fromisoformat(date_str.strip())
     except ValueError:
-        raise ValueError(f"Data não reconhecida: '{date_str}'. Use hoje/amanhã/sexta/YYYY-MM-DD")
+        raise ValueError(
+            f"Data não reconhecida: '{date_str}'. "
+            "Use: hoje / amanhã / essa sexta / próxima sexta / YYYY-MM-DD"
+        )
 
 
 def parse_time_str(time_str: str) -> tuple[int, int]:
