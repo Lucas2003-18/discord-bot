@@ -29,3 +29,8 @@ DIGEST_MINUTE: int = int(os.environ.get("DIGEST_MINUTE", "0"))
 TIMEZONE: str = os.environ.get("TIMEZONE", "America/Sao_Paulo")
 
 UPTIME_KUMA_PUSH_URL: str | None = os.environ.get("UPTIME_KUMA_PUSH_URL") or None
+
+CHANNEL_ALERTS: int = int(os.environ.get("CHANNEL_ALERTS") or "0")
+INFRA_CHECK_INTERVAL: int = int(os.environ.get("INFRA_CHECK_INTERVAL", "300"))
+DISK_ALERT_THRESHOLD: float = float(os.environ.get("DISK_ALERT_THRESHOLD", "90"))
+CPU_ALERT_THRESHOLD: float = float(os.environ.get("CPU_ALERT_THRESHOLD", "80"))

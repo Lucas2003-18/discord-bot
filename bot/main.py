@@ -51,9 +51,10 @@ class GlitchBot(commands.Bot):
         self.scheduler = scheduler
 
     async def setup_hook(self) -> None:
-        from bot.cogs import morning_digest, brain_sync
+        from bot.cogs import morning_digest, brain_sync, push_alerts
         await morning_digest.setup(self, self.scheduler)
         await brain_sync.setup(self)
+        await push_alerts.setup(self, self.scheduler)
 
         guild = discord.Object(id=config.GUILD_ID)
         self.tree.copy_global_to(guild=guild)

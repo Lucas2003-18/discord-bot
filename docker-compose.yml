@@ -7,6 +7,9 @@ services:
       - vault_data:/app/vault
       - ./credencials.json:/run/secrets/google_credentials:ro
       - ./token.json:/run/secrets/google_token:ro
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - /proc:/host/proc:ro
+      - /:/host/root:ro
     environment:
       - GOOGLE_CREDENTIALS_JSON=/run/secrets/google_credentials
       - GOOGLE_TOKEN_JSON=/run/secrets/google_token
