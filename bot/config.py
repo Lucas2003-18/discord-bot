@@ -1,4 +1,5 @@
 import os
+from pathlib import Path
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -29,6 +30,10 @@ DIGEST_MINUTE: int = int(os.environ.get("DIGEST_MINUTE", "0"))
 TIMEZONE: str = os.environ.get("TIMEZONE", "America/Sao_Paulo")
 
 UPTIME_KUMA_PUSH_URL: str | None = os.environ.get("UPTIME_KUMA_PUSH_URL") or None
+
+DASHBOARD_DATA_PATH: Path = Path(
+    os.environ.get("DASHBOARD_DATA_PATH", "/app/dashboard_shared/agenda.json")
+)
 
 CHANNEL_ALERTS: int = int(os.environ.get("CHANNEL_ALERTS") or "0")
 INFRA_CHECK_INTERVAL: int = int(os.environ.get("INFRA_CHECK_INTERVAL", "300"))

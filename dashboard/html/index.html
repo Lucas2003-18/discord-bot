@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+  <title>GLTCH Panel</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div id="app">
+    <header>
+      <div id="clock-block">
+        <div id="clock"></div>
+        <div id="date"></div>
+      </div>
+      <div id="heartbeat">carregando...</div>
+    </header>
+
+    <main>
+      <div class="card" id="weather-block">
+        <p class="label">clima — campinas</p>
+        <div id="weather-content"><p class="empty">carregando...</p></div>
+      </div>
+
+      <div class="card" id="agenda-block">
+        <p class="label">agenda de hoje</p>
+        <div id="agenda-content"><p class="empty">carregando...</p></div>
+      </div>
+
+      <div class="card card-disabled" id="granzo-block">
+        <p class="label">granzo</p>
+        <p class="placeholder">aguardando api</p>
+      </div>
+
+      <div class="card" id="services-block">
+        <p class="label">serviços — nuc</p>
+        <div id="services-content"><p class="empty">carregando...</p></div>
+        <div id="metrics-content"></div>
+      </div>
+    </main>
+  </div>
+  <script src="app.js"></script>
+</body>
+</html>

@@ -1,0 +1,13 @@
+services:
+  dashboard-nginx:
+    image: nginx:alpine
+    container_name: glitch-dashboard
+    restart: unless-stopped
+    ports:
+      - "80:80"
+    volumes:
+      - /home/glitch/glitch-dashboard/html:/usr/share/nginx/html:ro
+      - /home/glitch/glitch-dashboard/api:/app/api:ro
+      - ./nginx.conf:/etc/nginx/conf.d/default.conf:ro
+    extra_hosts:
+      - "host.docker.internal:host-gateway"

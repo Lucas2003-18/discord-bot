@@ -1,11 +1,15 @@
 import asyncio
+import json
 import logging
-from datetime import date
+from datetime import date, datetime
+from pathlib import Path
+from zoneinfo import ZoneInfo
 import discord
 from discord.ext import commands
 from discord import app_commands
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from apscheduler.triggers.cron import CronTrigger
+from apscheduler.triggers.interval import IntervalTrigger
 from bot import config
 from bot.services import weather_service, github_service, rss_service, calendar_service, gmail_service
 
@@ -27,12 +31,57 @@ class MorningDigest(commands.Cog):
             id="morning_digest",
             replace_existing=True,
         )
+        scheduler.add_job(
+            self._export_dashboard,
+            IntervalTrigger(minutes=10),
+            id="dashboard_export",
+            replace_existing=True,
+        )
 
     @app_commands.command(name="digest", description="Gera o morning digest agora")
     async def digest_command(self, interaction: discord.Interaction) -> None:
         await interaction.response.defer()
         embed = await self._build_embed()
         await interaction.followup.send(embed=embed)
+
+    async def _export_dashboard(self) -> None:
+        try:
+            results = await asyncio.gather(
+                weather_service.get_weather(),
+                asyncio.to_thread(calendar_service.get_todays_events),
+                asyncio.to_thread(calendar_service.get_todays_tasks),
+                return_exceptions=True,
+            )
+            weather = results[0] if isinstance(results[0], dict) else None
+            events  = results[1] if isinstance(results[1], list) else []
+            tasks   = results[2] if isinstance(results[2], list) else []
+
+            agenda = [
+                {"time": e["start"], "title": e["summary"], "type": "event"}
+                for e in events
+            ] + [
+                {"time": t["due"], "title": t["summary"], "type": "task", "done": False}
+                for t in tasks
+            ]
+            agenda.sort(key=lambda x: x["time"] or "")
+
+            data = {
+                "updated_at": datetime.now(ZoneInfo(config.TIMEZONE)).isoformat(),
+                "weather": {
+                    "temp": weather["temp"],
+                    "feels_like": weather["feels_like"],
+                    "humidity": weather["humidity"],
+                    "description": weather["description"],
+                } if weather else None,
+                "agenda": agenda,
+            }
+
+            path: Path = config.DASHBOARD_DATA_PATH
+            path.parent.mkdir(parents=True, exist_ok=True)
+            path.write_text(json.dumps(data, ensure_ascii=False, indent=2))
+            log.info("dashboard_export ok — %d itens na agenda", len(agenda))
+        except Exception as e:
+            log.error("dashboard_export failed: %s", e)
 
     async def _post_digest(self) -> None:
         channel = self.bot.get_channel(config.CHANNEL_MORNING_DIGEST)
