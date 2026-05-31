@@ -14,7 +14,9 @@ load_dotenv()
 
 SCOPES = [
     "https://www.googleapis.com/auth/calendar.readonly",
+    "https://www.googleapis.com/auth/calendar.events",
     "https://www.googleapis.com/auth/gmail.readonly",
+    "https://www.googleapis.com/auth/tasks",
 ]
 credentials_path = os.environ.get("GOOGLE_CREDENTIALS_JSON", "./credentials.json")
 token_path = os.environ.get("GOOGLE_TOKEN_JSON", "./token.json")
