@@ -1,0 +1,13 @@
+services:
+  bot:
+    build: .
+    restart: unless-stopped
+    env_file: .env
+    volumes:
+      - vault_data:/app/vault
+      - ./credencials.json:/run/secrets/google_credentials:ro
+    environment:
+      - GOOGLE_CREDENTIALS_JSON=/run/secrets/google_credentials
+
+volumes:
+  vault_data:
