@@ -1,6 +1,7 @@
 import asyncio
 import base64
 import logging
+import re
 from datetime import date, datetime
 import httpx
 from bot import config
@@ -44,17 +45,43 @@ async def _put_file(path: str, content: str, message: str, sha: str | None = Non
         resp.raise_for_status()
 
 
-async def append_to_capture(text: str) -> None:
+async def append_to_capture(text: str, attachment_path: str | None = None) -> None:
     path = "00-Inbox/discord-capture.md"
     timestamp = datetime.now().strftime("%Y-%m-%d %H:%M")
+    line = f"- [{timestamp}] {text}"
+    if attachment_path:
+        line += f"\n  ![[{attachment_path}]]"
+    line += "\n"
     async with _write_lock:
         existing, sha = await _get_file(path)
         if existing is None:
-            new_content = f"# Discord Capture\n\n- [{timestamp}] {text}\n"
+            new_content = f"# Discord Capture\n\n{line}"
             await _put_file(path, new_content, f"discord: capture - {text[:60]}")
         else:
-            new_content = existing + f"- [{timestamp}] {text}\n"
+            new_content = existing + line
             await _put_file(path, new_content, f"discord: capture - {text[:60]}", sha)
+
+
+async def upload_attachment(filename: str, data: bytes) -> str:
+    today = date.today().strftime("%Y-%m-%d")
+    safe = re.sub(r"[^\w.\-]", "_", filename)
+    path = f"00-Inbox/Attachments/{today}-{safe}"
+    body = {
+        "message": f"discord: attachment - {safe}",
+        "content": base64.b64encode(data).decode("ascii"),
+        "branch": "main",
+    }
+    async with httpx.AsyncClient(timeout=30) as client:
+        resp = await client.post(f"{BASE}/{path}", headers=HEADERS, json=body)
+        if resp.status_code == 422:
+            # Arquivo já existe — adiciona timestamp para evitar colisão
+            stem, _, ext = safe.rpartition(".")
+            ts = int(datetime.now().timestamp())
+            path = f"00-Inbox/Attachments/{today}-{stem}-{ts}.{ext}"
+            body["message"] = f"discord: attachment - {stem}-{ts}"
+            resp = await client.post(f"{BASE}/{path}", headers=HEADERS, json=body)
+        resp.raise_for_status()
+    return path
 
 
 async def append_to_daily_note(task: str) -> None:

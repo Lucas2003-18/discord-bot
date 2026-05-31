@@ -1,5 +1,9 @@
 import logging
+import os
+import re
+from io import BytesIO
 from datetime import datetime, date, timezone
+import httpx
 import discord
 from discord.ext import commands
 from discord import app_commands
@@ -9,6 +13,28 @@ from bot.services.calendar_service import (
 )
 
 log = logging.getLogger(__name__)
+
+_IMAGE_EXTS = {".jpg", ".jpeg", ".png", ".gif", ".webp"}
+
+
+def _compress_image(data: bytes, filename: str) -> tuple[bytes, str]:
+    from PIL import Image
+    ext = os.path.splitext(filename)[1].lower()
+    if ext == ".gif":
+        return data, ".gif"
+    try:
+        img = Image.open(BytesIO(data))
+        if img.width > 1920:
+            ratio = 1920 / img.width
+            img = img.resize((1920, int(img.height * ratio)), Image.LANCZOS)
+        out = BytesIO()
+        if img.mode in ("RGBA", "PA", "LA"):
+            img.save(out, format="PNG", optimize=True)
+            return out.getvalue(), ".png"
+        img.convert("RGB").save(out, format="JPEG", quality=85, optimize=True)
+        return out.getvalue(), ".jpg"
+    except Exception:
+        return data, ext
 
 
 async def _finish_todo(
@@ -92,20 +118,50 @@ class BrainSync(commands.Cog):
         self.bot = bot
 
     @app_commands.command(name="memo", description="Captura uma ideia no vault (discord-capture.md)")
-    @app_commands.describe(texto="O que você quer capturar")
-    async def memo(self, interaction: discord.Interaction, texto: str) -> None:
+    @app_commands.describe(texto="O que você quer capturar", imagem="Imagem opcional (JPG, PNG, GIF, WEBP)")
+    async def memo(
+        self,
+        interaction: discord.Interaction,
+        texto: str,
+        imagem: discord.Attachment | None = None,
+    ) -> None:
         age = (datetime.now(timezone.utc) - interaction.created_at).total_seconds()
-        log.info("/memo recebido: age=%.2fs id=%s", age, interaction.id)
+        log.info("/memo recebido: age=%.2fs id=%s imagem=%s", age, interaction.id, bool(imagem))
         await interaction.response.defer(ephemeral=True)
+
+        attachment_path: str | None = None
+
+        if imagem is not None:
+            ext = os.path.splitext(imagem.filename)[1].lower()
+            if ext not in _IMAGE_EXTS:
+                await interaction.followup.send(
+                    f"❌ Formato não suportado: `{ext}`. Use JPG, PNG, GIF ou WEBP.", ephemeral=True
+                )
+                return
+            try:
+                async with httpx.AsyncClient(timeout=30) as client:
+                    resp = await client.get(imagem.url)
+                    resp.raise_for_status()
+                compressed, new_ext = _compress_image(resp.content, imagem.filename)
+                stem = re.sub(r"[^\w\-]", "_", os.path.splitext(imagem.filename)[0])
+                attachment_path = await vault_service.upload_attachment(f"{stem}{new_ext}", compressed)
+                log.info("/memo: imagem salva em %s (%d bytes)", attachment_path, len(compressed))
+            except Exception as e:
+                log.error("brain_sync /memo imagem error: %s", e)
+                await interaction.followup.send("❌ Erro ao fazer upload da imagem.", ephemeral=True)
+                return
+
         try:
-            await vault_service.append_to_capture(texto)
+            await vault_service.append_to_capture(texto, attachment_path)
             timestamp = datetime.now().strftime("%Y-%m-%d %H:%M")
-            await interaction.followup.send(
+            reply = (
                 f"✅ **Memo salvo**\n"
                 f"```\n[{timestamp}] {texto}\n```\n"
-                f"📁 `00-Inbox/discord-capture.md`",
-                ephemeral=True,
+                f"📁 `00-Inbox/discord-capture.md`"
             )
+            if attachment_path:
+                reply += f"\n🖼️ `{attachment_path}`"
+            await interaction.followup.send(reply, ephemeral=True)
         except Exception as e:
             log.error("brain_sync /memo error: %s", e)
             await interaction.followup.send("❌ Erro inesperado.", ephemeral=True)
