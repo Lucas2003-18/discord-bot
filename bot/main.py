@@ -25,7 +25,7 @@ class _JsonFormatter(logging.Formatter):
         }
         if extra:
             obj.update(extra)
-        return json.dumps(obj, ensure_ascii=False)
+        return json.dumps(obj, ensure_ascii=False, default=str)
 
 
 def _setup_logging() -> None:
