@@ -27,3 +27,5 @@ VAULT_GITEA_REPO: str = os.environ.get("VAULT_GITEA_REPO", "obsidian-vault")
 DIGEST_HOUR: int = int(os.environ.get("DIGEST_HOUR", "7"))
 DIGEST_MINUTE: int = int(os.environ.get("DIGEST_MINUTE", "0"))
 TIMEZONE: str = os.environ.get("TIMEZONE", "America/Sao_Paulo")
+
+UPTIME_KUMA_PUSH_URL: str | None = os.environ.get("UPTIME_KUMA_PUSH_URL") or None

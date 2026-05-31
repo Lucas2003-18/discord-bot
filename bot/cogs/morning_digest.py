@@ -49,15 +49,21 @@ class MorningDigest(commands.Cog):
             color=BLURPLE,
         )
 
-        weather, github, hn, devto, calendar, gmail = await asyncio.gather(
+        _SERVICES = ["weather", "github", "rss_hn", "rss_devto", "calendar", "gmail"]
+        _results = await asyncio.gather(
             weather_service.get_weather(),
             asyncio.to_thread(github_service.get_recent_activity),
             asyncio.to_thread(rss_service.get_hn_top),
             asyncio.to_thread(rss_service.get_devto_top),
             asyncio.to_thread(calendar_service.get_todays_events),
             asyncio.to_thread(gmail_service.get_important_emails),
-            return_exceptions=False,
+            return_exceptions=True,
         )
+        weather, github, hn, devto, calendar, gmail = [
+            (log.error("digest: falha em %s", svc, exc_info=r) or None)
+            if isinstance(r, Exception) else r
+            for svc, r in zip(_SERVICES, _results)
+        ]
 
         # Clima
         if weather:

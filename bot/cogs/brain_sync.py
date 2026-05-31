@@ -1,5 +1,4 @@
 import logging
-import subprocess
 from datetime import datetime, date, timezone
 import discord
 from discord.ext import commands
@@ -21,20 +20,12 @@ class BrainSync(commands.Cog):
         log.info("/memo recebido: age=%.2fs id=%s", age, interaction.id)
         await interaction.response.defer(ephemeral=True)
         try:
-            await interaction.client.loop.run_in_executor(
-                None, vault_service.append_to_capture, texto
-            )
+            await vault_service.append_to_capture(texto)
             timestamp = datetime.now().strftime("%Y-%m-%d %H:%M")
             await interaction.followup.send(
                 f"✅ **Memo salvo**\n"
                 f"```\n[{timestamp}] {texto}\n```\n"
                 f"📁 `00-Inbox/discord-capture.md`",
-                ephemeral=True,
-            )
-        except subprocess.CalledProcessError as e:
-            log.error("brain_sync /memo git error: %s", e.stderr)
-            await interaction.followup.send(
-                "❌ Falha ao sincronizar com o vault. Verifique os logs.",
                 ephemeral=True,
             )
         except Exception as e:
@@ -82,15 +73,7 @@ class BrainSync(commands.Cog):
                     return
 
         try:
-            await interaction.client.loop.run_in_executor(
-                None, vault_service.append_to_daily_note, task
-            )
-        except subprocess.CalledProcessError as e:
-            log.error("brain_sync /todo git error: %s", e.stderr)
-            await interaction.followup.send(
-                "❌ Falha ao sincronizar com o vault. Verifique os logs.", ephemeral=True
-            )
-            return
+            await vault_service.append_to_daily_note(task)
         except Exception as e:
             log.error("brain_sync /todo error: %s", e)
             await interaction.followup.send("❌ Erro inesperado.", ephemeral=True)

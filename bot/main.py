@@ -1,14 +1,46 @@
 import asyncio
+import json
 import logging
+import httpx
 import discord
 from discord.ext import commands
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
+from apscheduler.triggers.interval import IntervalTrigger
 from bot import config
 
-logging.basicConfig(
-    level=logging.INFO,
-    format="%(asctime)s [%(levelname)s] %(name)s: %(message)s",
-)
+
+class _JsonFormatter(logging.Formatter):
+    def format(self, record: logging.LogRecord) -> str:
+        obj: dict = {
+            "ts": self.formatTime(record, "%Y-%m-%dT%H:%M:%S"),
+            "level": record.levelname,
+            "logger": record.name,
+            "msg": record.getMessage(),
+        }
+        if record.exc_info:
+            obj["exc"] = self.formatException(record.exc_info)
+        extra = {
+            k: v for k, v in record.__dict__.items()
+            if k not in logging.LogRecord.__dict__ and not k.startswith("_")
+        }
+        if extra:
+            obj.update(extra)
+        return json.dumps(obj, ensure_ascii=False)
+
+
+def _setup_logging() -> None:
+    handler = logging.StreamHandler()
+    handler.setFormatter(_JsonFormatter())
+    root = logging.getLogger()
+    root.setLevel(logging.INFO)
+    root.handlers.clear()
+    root.addHandler(handler)
+    # silencia loggers verbosos de terceiros
+    for noisy in ("discord.gateway", "discord.client", "httpx", "httpcore"):
+        logging.getLogger(noisy).setLevel(logging.WARNING)
+
+
+_setup_logging()
 log = logging.getLogger(__name__)
 
 
@@ -40,8 +72,27 @@ class GlitchBot(commands.Bot):
             log.info("APScheduler iniciado")
 
 
+async def _uptime_heartbeat() -> None:
+    try:
+        async with httpx.AsyncClient(timeout=10) as client:
+            await client.get(config.UPTIME_KUMA_PUSH_URL)
+        log.debug("uptime_kuma: heartbeat enviado")
+    except Exception as e:
+        log.error("uptime_kuma: falha no heartbeat", exc_info=e)
+
+
 async def main() -> None:
     scheduler = AsyncIOScheduler(timezone=config.TIMEZONE)
+
+    if config.UPTIME_KUMA_PUSH_URL:
+        scheduler.add_job(
+            _uptime_heartbeat,
+            IntervalTrigger(seconds=60),
+            id="uptime_heartbeat",
+            replace_existing=True,
+        )
+        log.info("uptime_kuma: heartbeat agendado a cada 60s")
+
     bot = GlitchBot(scheduler)
     async with bot:
         await bot.start(config.DISCORD_TOKEN)
