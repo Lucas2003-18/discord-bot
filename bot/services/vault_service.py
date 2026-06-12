@@ -84,6 +84,36 @@ async def upload_attachment(filename: str, data: bytes) -> str:
     return path
 
 
+async def log_incident(incident: dict) -> None:
+    """Registra um incidente de infra em 20-Areas/Infra/incidentes.md (append).
+
+    `incident` espera as chaves: container, causa_raiz, solucao, status
+    e opcionalmente timestamp, tempo_resolucao.
+    """
+    path = "20-Areas/Infra/incidentes.md"
+    timestamp = incident.get("timestamp") or datetime.now().strftime("%Y-%m-%d %H:%M")
+    container = incident["container"]
+
+    entry = f"\n## {timestamp} — {container}\n\n"
+    entry += f"**Causa raiz:** {incident.get('causa_raiz', '—')}\n"
+    entry += f"**Solução aplicada:** {incident.get('solucao', '—')}\n"
+    entry += f"**Status:** {incident.get('status', '—')}\n"
+    if incident.get("tempo_resolucao"):
+        entry += f"**Tempo de resolução:** {incident['tempo_resolucao']}\n"
+    entry += "\n"
+
+    commit_msg = f"discord: incidente - {container} ({incident.get('status', '')})"
+
+    async with _write_lock:
+        existing, sha = await _get_file(path)
+        if existing is None:
+            new_content = f"# Incidentes de Infra\n{entry}"
+            await _put_file(path, new_content, commit_msg)
+        else:
+            new_content = existing + entry
+            await _put_file(path, new_content, commit_msg, sha)
+
+
 async def append_to_daily_note(task: str) -> None:
     today = date.today().strftime("%Y-%m-%d")
     path = f"00-Inbox/{today}.md"

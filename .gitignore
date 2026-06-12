@@ -3,6 +3,8 @@ credentials.json
 credencials.json
 token.json
 client_secret_*.json
+infra_ssh_key
+infra_ssh_key.pub
 vault/
 __pycache__/
 *.pyc

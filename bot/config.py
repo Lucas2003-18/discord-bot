@@ -43,3 +43,8 @@ CPU_ALERT_THRESHOLD: float = float(os.environ.get("CPU_ALERT_THRESHOLD", "80"))
 GEMINI_BRIDGE_URL: str = os.environ.get("GEMINI_BRIDGE_URL", "http://gemini-bridge:3001")
 INCIDENT_CHECK_INTERVAL: int = int(os.environ.get("INCIDENT_CHECK_INTERVAL", "2"))  # minutos
 INCIDENT_TIMEOUT: int = int(os.environ.get("INCIDENT_TIMEOUT", "30"))  # minutos sem resposta
+
+# SSH para edit_file (host é read-only via /host/root)
+INFRA_SSH_HOST: str = os.environ.get("INFRA_SSH_HOST", "localhost")
+INFRA_SSH_USER: str = os.environ.get("INFRA_SSH_USER", "glitch")
+INFRA_SSH_KEY: str = os.environ.get("INFRA_SSH_KEY", "/run/secrets/infra_ssh_key")

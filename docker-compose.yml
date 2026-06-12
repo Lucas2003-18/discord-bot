@@ -11,6 +11,7 @@ services:
       - /proc:/host/proc:ro
       - /:/host/root:ro
       - /home/glitch/glitch-dashboard/api:/app/dashboard_shared
+      - ./infra_ssh_key:/run/secrets/infra_ssh_key:ro
     environment:
       - GOOGLE_CREDENTIALS_JSON=/run/secrets/google_credentials
       - GOOGLE_TOKEN_JSON=/run/secrets/google_token
