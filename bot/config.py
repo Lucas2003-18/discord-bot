@@ -39,3 +39,7 @@ CHANNEL_ALERTS: int = int(os.environ.get("CHANNEL_ALERTS") or "0")
 INFRA_CHECK_INTERVAL: int = int(os.environ.get("INFRA_CHECK_INTERVAL", "300"))
 DISK_ALERT_THRESHOLD: float = float(os.environ.get("DISK_ALERT_THRESHOLD", "90"))
 CPU_ALERT_THRESHOLD: float = float(os.environ.get("CPU_ALERT_THRESHOLD", "80"))
+
+GEMINI_BRIDGE_URL: str = os.environ.get("GEMINI_BRIDGE_URL", "http://gemini-bridge:3001")
+INCIDENT_CHECK_INTERVAL: int = int(os.environ.get("INCIDENT_CHECK_INTERVAL", "2"))  # minutos
+INCIDENT_TIMEOUT: int = int(os.environ.get("INCIDENT_TIMEOUT", "30"))  # minutos sem resposta
