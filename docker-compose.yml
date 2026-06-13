@@ -3,6 +3,10 @@ services:
     build: .
     restart: unless-stopped
     env_file: .env
+    # botuser precisa do grupo "docker" do host para acessar /var/run/docker.sock
+    # (gid 990 no NUC — checar `getent group docker` se mudar de host)
+    group_add:
+      - "990"
     volumes:
       - vault_data:/app/vault
       - ./credencials.json:/run/secrets/google_credentials:ro
