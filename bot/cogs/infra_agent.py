@@ -156,7 +156,13 @@ class InfraAgent(commands.Cog):
             log.error("infra_agent: falha ao ler logs de %s", name, exc_info=e)
             logs = ""
 
-        diagnosis = await gemini_service.analyze_incident(name, logs)
+        try:
+            vault_history = await vault_service.get_incident_history(name)
+        except Exception as e:
+            log.error("infra_agent: falha ao ler histórico de incidentes de %s", name, exc_info=e)
+            vault_history = ""
+
+        diagnosis = await gemini_service.analyze_incident(name, logs, vault_history)
 
         embed = discord.Embed(title=f"🔴 Incidente Detectado — {name}", color=RED)
         embed.add_field(name="Causa raiz", value=diagnosis["causa_raiz"][:1024], inline=False)

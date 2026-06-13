@@ -114,6 +114,29 @@ async def log_incident(incident: dict) -> None:
             await _put_file(path, new_content, commit_msg, sha)
 
 
+async def get_incident_history(container: str, limit: int = 5) -> str:
+    """Retorna os últimos `limit` incidentes registrados para `container` em
+    20-Areas/Infra/incidentes.md, formatados para injeção no prompt do Gemini.
+
+    Retorna string vazia se o arquivo ainda não existir ou não houver
+    incidentes anteriores para esse container.
+    """
+    path = "20-Areas/Infra/incidentes.md"
+    content, _ = await _get_file(path)
+    if content is None:
+        return ""
+
+    entries = []
+    for block in content.split("\n## ")[1:]:
+        header, _, body = block.partition("\n")
+        _, _, name = header.partition(" — ")
+        if name.strip() != container:
+            continue
+        entries.append(f"## {header}\n{body}".strip())
+
+    return "\n\n".join(entries[-limit:])
+
+
 async def append_to_daily_note(task: str) -> None:
     today = date.today().strftime("%Y-%m-%d")
     path = f"00-Inbox/{today}.md"
