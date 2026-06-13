@@ -143,7 +143,7 @@ DIGEST_MINUTE          # 0
 GEMINI_BRIDGE_URL      # http://gemini-bridge:3001
 INCIDENT_CHECK_INTERVAL # 2 (minutos)
 INCIDENT_TIMEOUT        # 30 (minutos)
-INFRA_SSH_HOST          # localhost (NUC, usado por edit_file)
+INFRA_SSH_HOST          # 192.168.1.100 (IP do NUC na LAN — "localhost" não funciona em rede bridge)
 INFRA_SSH_USER          # glitch
 INFRA_SSH_KEY           # /run/secrets/infra_ssh_key
 ```
