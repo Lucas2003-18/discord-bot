@@ -19,6 +19,14 @@ services:
     environment:
       - GOOGLE_CREDENTIALS_JSON=/run/secrets/google_credentials
       - GOOGLE_TOKEN_JSON=/run/secrets/google_token
+    networks:
+      - default
+      - collab-hub-network
 
 volumes:
   vault_data:
+
+networks:
+  default:
+  collab-hub-network:
+    external: true

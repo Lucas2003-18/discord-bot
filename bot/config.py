@@ -44,6 +44,11 @@ GEMINI_BRIDGE_URL: str = os.environ.get("GEMINI_BRIDGE_URL", "http://gemini-brid
 INCIDENT_CHECK_INTERVAL: int = int(os.environ.get("INCIDENT_CHECK_INTERVAL", "2"))  # minutos
 INCIDENT_TIMEOUT: int = int(os.environ.get("INCIDENT_TIMEOUT", "30"))  # minutos sem resposta
 
+# Containers que o infra_agent nunca deve monitorar (ex: parados intencionalmente)
+INFRA_IGNORE_CONTAINERS: set[str] = {
+    name.strip() for name in os.environ.get("INFRA_IGNORE_CONTAINERS", "").split(",") if name.strip()
+}
+
 # SSH para edit_file (host é read-only via /host/root)
 INFRA_SSH_HOST: str = os.environ.get("INFRA_SSH_HOST", "localhost")
 INFRA_SSH_USER: str = os.environ.get("INFRA_SSH_USER", "glitch")

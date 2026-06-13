@@ -114,6 +114,8 @@ class InfraAgent(commands.Cog):
 
         for c in containers:
             name = c["name"]
+            if name in config.INFRA_IGNORE_CONTAINERS:
+                continue
             try:
                 if c["state"] == "exited":
                     problem_containers.add(name)
